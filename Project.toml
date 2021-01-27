@@ -1,7 +1,13 @@
-name = "ContGridWorld"
+name = "ContGridWorlds"
 uuid = "f1a3a3cd-a813-409e-939c-b862e0727930"
 authors = ["Matthew Schlegel <mkschleg@gmail.com> and contributors"]
 version = "0.1.0"
+
+[deps]
+MinimalRLCore = "4557a151-568a-41c4-844f-9d8069264cea"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
 [compat]
 julia = "1"
