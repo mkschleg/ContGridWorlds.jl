@@ -53,6 +53,8 @@ const ROOM_TOP_RIGHT = 2
 const ROOM_BOTTOM_LEFT = 3
 const ROOM_BOTTOM_RIGHT = 4
 
+const REW_FUNCS = Dict{Int, Function}()
+
 end
 
 module TMazeContParams
@@ -89,8 +91,15 @@ end
 
 include("dynamics.jl")
 
-FourRooms(max_action_noise=0.1, drift_noise=0.001; normalized=false) =
-    ContGridWorld(FourRoomsContParams.BASE_WALLS[end:-1:1, :], max_action_noise, drift_noise, normalized)
+FourRooms(max_action_noise=0.1,
+          drift_noise=0.001;
+          normalized=false) =
+              ContGridWorld(FourRoomsContParams.BASE_WALLS[end:-1:1, :],
+                            FourRoomsContParams.GOAL_LOCS[end:-1:1, :],
+                            FourRoomsContParams.REW_FUNCS,
+                            max_action_noise,
+                            drift_noise,
+                            normalized)
 
 TMaze(max_action_noise=0.1, drift_noise=0.001; normalized=false) =
     ContGridWorld(TMazeContParams.BASE_WALLS[end:-1:1, :],
@@ -132,21 +141,25 @@ end
     PP = PlotParams
 
     s = size(env)
-    screen = fill(PP.BG, s[2]*PlotParams.SIZE, s[1]*PlotParams.SIZE)
+    screen = fill(PP.BG, (s[2] + 2)*PlotParams.SIZE, (s[1] + 2)*PlotParams.SIZE)
+    screen[:, 1:PP.SIZE] .= PP.WALL
+    screen[1:PP.SIZE, :] .= PP.WALL
+    screen[end-(PP.SIZE-1):end, :] .= PP.WALL
+    screen[:, end-(PP.SIZE-1):end] .= PP.WALL
     
     for i ∈ 1:s[1]
         for j ∈ 1:s[2]
-            sqr_i = ((i-1)*PP.SIZE + 1):((i)*PP.SIZE)
-            sqr_j = ((j-1)*PP.SIZE + 1):((j)*PP.SIZE)
+            sqr_i = ((i)*PP.SIZE + 1):((i+1)*PP.SIZE)
+            sqr_j = ((j)*PP.SIZE + 1):((j+1)*PP.SIZE)
             if env.walls[s[1] - i + 1, j]
                 screen[sqr_i, sqr_j] .= PP.WALL
             end
             if env.goals[s[1] - i + 1, j] > 0
-                screen[sqr_i, sqr_j] .= PP.GOAL 
+                screen[sqr_i, sqr_j] .= PP.GOAL
             end
         end
     end
-    state = env.state.*PlotParams.SIZE
+    state = ((env.state[1] - 1, env.state[2] + 1).*PlotParams.SIZE)
     
     screen[collect(-1:2) .+ Int(floor(PP.SIZE*s[1] - state[1])), collect(-1:2) .+ Int(floor(state[2]))] .= PP.AGENT
 
