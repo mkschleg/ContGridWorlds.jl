@@ -42,7 +42,7 @@ LEFT = 4
 
 ACTIONS = [UP, RIGHT, DOWN, LEFT]
 
-const BODY_RADIUS = 0.1
+const BODY_RADIUS = 0.2
 const STEP = 0.5
 
 const AGENT_BOUNDRIES = [

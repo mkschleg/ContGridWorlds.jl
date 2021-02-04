@@ -9,6 +9,7 @@ import Reexport: @reexport
 
 @reexport using MinimalRLCore
 
+using RecipesBase
 
 """
     Simple reward structure for goals. Can be duck typed.
@@ -35,6 +36,18 @@ const BASE_WALLS = [0 0 0 0 0 1 0 0 0 0 0;
                     0 0 0 0 0 0 0 0 0 0 0;
                     0 0 0 0 0 1 0 0 0 0 0;]
 
+const GOAL_LOCS =  [0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;
+                    0 0 0 0 0 0 0 0 0 0 0;]
+
 const ROOM_TOP_LEFT = 1
 const ROOM_TOP_RIGHT = 2
 const ROOM_BOTTOM_LEFT = 3
@@ -59,7 +72,7 @@ const BASE_WALLS = [1 1 1 1 1 1 1 1 1 1 1;
                     1 1 1 1 0 0 0 1 1 1 1;]
 
 const GOAL_LOCS = [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1;
-                   -1  1  1 -1  1  1  1 -1  3  3 -1;
+                   -1  1  1 -1 -1 -1 -1 -1  3  3 -1;
                    -1  0  0  0  0  0  0  0  0  0 -1;
                    -1  0  0  0  0  0  0  0  0  0 -1;
                    -1  0  0  0  0  0  0  0  0  0 -1;
@@ -73,8 +86,6 @@ const GOAL_LOCS = [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1;
 const REW_FUNCS = Dict([i=>BasicRewFunc(i) for i in 1:4]...)
 
 end
-
-
 
 include("dynamics.jl")
 
@@ -92,48 +103,56 @@ TMaze(max_action_noise=0.1, drift_noise=0.001; normalized=false) =
 
 
 
+module PlotParams
+
+using Colors
 
 
-# function MonteCarloReturn(env::FourRoomsCont, gvf::GVF, start_state::Array{Float64, 1},
-#                           num_returns::Int64, γ_thresh::Float64=1e-6,
-#                           max_steps::Int64=Int64(1e7);
-#                           rng=Random.GLOBAL_RNG)
+const SIZE = 10
+const BG = Colors.RGB(1.0, 1.0, 1.0)
+const WALL = Colors.RGB(0.3, 0.3, 0.3)
+const AC = Colors.RGB(0.69921875, 0.10546875, 0.10546875)
+const GOAL = Colors.RGB(0.796875, 0.984375, 0.76953125)
+const AGENT = [AC AC AC AC;
+               AC AC AC AC;
+               AC AC AC AC;
+               AC AC AC AC;]
 
-#     returns = zeros(num_returns)
-#     for ret in 1:num_returns
-#         step = 0
-#         cur_state = start_state
-#         cumulative_gamma = 1.0
-#         while cumulative_gamma > γ_thresh && step < max_steps
-#             action = StatsBase.sample(rng, gvf.policy, cur_state)
-#             next_state, _, _ = _step(env, cur_state, action; rng=rng)
-#             c, γ, pi_prob = get(gvf, cur_state, action, next_state, nothing, nothing)
-#             returns[ret] += cumulative_gamma*c
-#             cumulative_gamma *= γ
-#             cur_state = next_state
-#             step += 1
-#         end
-#     end
+end
 
-#     return returns
-# end
+@recipe function f(env::ContGridWorld)
+    ticks := nothing
+    foreground_color_border := nothing
+    grid := false
+    legend := false
+    aspect_ratio := 1
+    xaxis := false
+    yaxis := false
 
-# import ProgressMeter
+    PP = PlotParams
 
-# function get_sequence(env::FourRoomsCont, num_steps, policy; seed=0, normalized=false)
-#     rng = Random.MersenneTwister(seed)
-#     env.normalized = normalized
-#     states = Array{Array{Float64, 1}}(undef, num_steps+1)
-#     _, state = start!(env; rng=rng)
-#     states[1] = copy(state[1])
-#     ProgressMeter.@showprogress 0.1 "Step:" for step in 1:num_steps
-#         action = StatsBase.sample(rng, policy, state)
-#         _, state, _, _ = step!(env, action; rng=rng)
-#         states[step+1] = copy(state[1])
-#     end
-#     return states
-# end
+    s = size(env)
+    screen = fill(PP.BG, s[2]*PlotParams.SIZE, s[1]*PlotParams.SIZE)
+    
+    for i ∈ 1:s[1]
+        for j ∈ 1:s[2]
+            sqr_i = ((i-1)*PP.SIZE + 1):((i)*PP.SIZE)
+            sqr_j = ((j-1)*PP.SIZE + 1):((j)*PP.SIZE)
+            if env.walls[s[1] - i + 1, j]
+                screen[sqr_i, sqr_j] .= PP.WALL
+            end
+            if env.goals[s[1] - i + 1, j] > 0
+                screen[sqr_i, sqr_j] .= PP.GOAL 
+            end
+        end
+    end
+    state = env.state.*PlotParams.SIZE
+    
+    screen[collect(-1:2) .+ Int(floor(PP.SIZE*s[1] - state[1])), collect(-1:2) .+ Int(floor(state[2]))] .= PP.AGENT
 
+    
+    screen
+end
 
 
 end
